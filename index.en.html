@@ -1,0 +1,779 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Aktiv-Schule Erfurt - Whiteboard</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js" integrity="sha384-LtrjvnR4Twt/qOuYxE721u19sVFLVSA4hf/rRt6PrZTmiPltdZcI7q7PXQBYTKyf" crossorigin="anonymous"></script>
+
+    <script type="text/javascript" charset="UTF-8" src="//cdnjs.cloudflare.com/ajax/libs/jsxgraph/1.1.0/jsxgraphcore.js"></script>
+    <link rel="stylesheet" type="text/css" href="//cdnjs.cloudflare.com/ajax/libs/jsxgraph/1.1.0/jsxgraph.css" />
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg-full.js"></script>
+    <script src="https://unpkg.com/konva@7.1.9/konva.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvg/dist/browser/canvg.min.js"></script>
+    <script type="text/javascript">
+        var latexBoxes = new Array();
+        var latexTransformers = new Array();
+    </script>
+    <script type="text/javascript">
+
+        var textBoxes = new Array();
+        var textTransformers = new Array();
+        var arrows = new Array();
+        var arrowTransformers = new Array();
+        var scolor = '#000000';
+        function color(obj) {
+            scolor = obj.value;
+            context.strokeStyle = obj.value;
+        }
+
+        function linewidth(obj) {
+            context.lineWidth = obj.value;
+        }
+
+        function getFormattedTime() {
+            var today = new Date();
+            var y = today.getFullYear();
+            // JavaScript months are 0-based.
+            var m = today.getMonth() + 1;
+            var d = today.getDate();
+            var h = today.getHours();
+            var mi = today.getMinutes();
+            var s = today.getSeconds();
+            return y + "-" + m + "-" + d + "-" + h + "-" + mi + "-" + s;
+        }
+        function downloadURI(uri, name) {
+            var link = document.createElement('a');
+            link.download = name;
+            link.href = uri;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            delete link;
+        }
+        $(document).ready(function () {
+            $('#flip').click(function () {
+                $('#panel').toggle();
+            });
+            $('#save').click(function () {
+                var background = new Konva.Rect({
+                    x: 0,
+                    y: 0,
+                    width: stage.width(),
+                    height: stage.height(),
+                    fill: 'white',
+                });
+                layer.add(background);
+                background.moveToBottom();
+                layer.draw();
+                var dataURL = stage.toDataURL();
+                downloadURI(dataURL, 'wb-' + getFormattedTime() + '.png');
+                background.remove();
+                layer.draw();
+            });
+        });
+    </script>
+
+
+
+</head>
+<body>
+
+    <div class="row">
+        <div class="col-xl-8">
+            <div class="row">
+                <div id="output" hidden></div>
+                <div id="container" style="background-color: white; border: 1px dashed black;"></div>
+            </div>
+            <div class="row">
+                <!--<canvas id="outputc" width="1000" height="1000" style="position: absolute; left: 20px; top: 10px;"></canvas>-->
+                <!--<input type="button" value="save" id="btn" size="30" onclick="save()" style="position:absolute;top:95%;left:10%;">-->
+                <div class="col-md-2"><button type="button" class="btn btn-success" id="save">Save Image</button></div>
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-info" id="flip">Show/Hide Toolbox</button>
+                </div>
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-danger" onclick="penclear()">Clear pen drawings</button>
+                </div>
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-danger" onclick="stageclear()">Clear whiteboard</button>
+                </div>
+                <div class="col-md-2">
+                    <div class="btn-group-toggle" data-toggle="buttons">
+                        <label class="btn btn-danger">
+                            <input type="checkbox" autocomplete="off" id="deletecheckbox">Delete object
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4" id="panel">
+            <div class="row">
+                <div class="col-md-4"><input class="form-control" type="text" id="input" value="sin(x)*x" /></div>
+                <div class="col-md-1">
+                    <button class="btn btn-primary" type="button" onClick="plotter()">Plot</button>
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-primary" type="button" onClick="clearAll()">Clear</button>
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-primary" type="button" onClick="addTangent()">Tangent</button>
+                </div>
+                <div class="col-md-2"><button class="btn btn-primary" type="button" onClick="addDerivative()">1st derivative</button></div>
+            </div>
+            <div class="row">
+                <div class="col-md-12">
+                    <div id='jxgbox' class='jxgbox' style='width:600px; height:400px;'></div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-12">
+<textarea id="inputtex" rows="15" cols="10" class="form-control">
+   x = {-b \pm \sqrt{b^2-4ac} \over 2a}
+        </textarea>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-4">
+                    <input type="checkbox" id="display" checked onchange="convert()" /> <label for="display">Display style</label>
+                </div>
+                <div class="col">
+                    <button class="btn btn-primary" type="button" id="render" onclick="convert()">Render TeX</button>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-2">
+                    Werkzeug:
+                </div>
+                <div class="col-md-6">
+                    <select class="form-control" id="tool">
+                        <option value="brush">brush</option>
+                        <option value="eraser">eraser</option>
+                    </select>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-4">
+                    <button type="button" class="btn btn-primary" onclick="addText()">Add Text</button>
+                </div>
+                <div class="col-md-4">
+                    <button type="button" class="btn btn-primary" onclick="addArrow()">Add Arrow</button>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-2">
+                    Add image:
+                </div>
+                <div class="col-md-4">
+                    <input type="file" id="file_input" class="btn btn-dark" />
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-2">
+                    Colour:
+                </div>
+                <div class="col-md-6">
+                    <input class="form-control" type="color" onchange="color(this)" />
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-2">
+                    line width:
+                </div>
+                <div class="col-md-6">
+                    <select class="form-control" id="linewidth" onchange="linewidth(this)">
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3" selected>3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                        <option value="6">6</option>
+                        <option value="7">7</option>
+                        <option value="8">8</option>
+                        <option value="9">9</option>
+                        <option value="10">10</option>
+                    </select>
+                </div>
+            </div>
+
+            <script type="text/javascript">
+
+            var board = JXG.JSXGraph.initBoard('jxgbox', { boundingbox: [-5, 8, 8, -5], axis: true });
+            var f, curve; // global objects
+            function addArrow() {
+                var arrow = new Konva.Arrow({
+                    x: 50,
+                    y: 50,
+                    points: [0, 0, 120, 0],
+                    pointerLength: 20,
+                    pointerWidth: 20,
+                    fill: scolor,
+                    stroke: scolor,
+                    strokeWidth: 4,
+                    draggable: true,
+                });
+                layer.add(arrow);
+                arrows.push(arrow);
+                var tr = new Konva.Transformer({
+                    node: arrow,
+                    //enabledAnchors: ['top-left',
+                    //    'top-right',
+                    //    'bottom-left',
+                    //    'bottom-right',],
+                    //// set minimum width of text
+                });
+                arrowTransformers.push(tr);
+                arrow.on('dblclick', function () {
+                    if ($('#deletecheckbox').prop('checked')) {
+                        arrow.remove();
+                        $('#deletecheckbox').prop('checked', false);
+                        $('#deletecheckbox').removeClass('active');
+                        return;
+                    }
+                    tr.show();
+                    tr.forceUpdate();
+                    layer.draw();
+                })
+
+                layer.add(tr);
+                layer.draw();
+            }
+
+            function addText() {
+                //var textBoxes = new Array();
+                //var textTransformers = new Array();
+                var textNode = new Konva.Text({
+                    text: 'Text',
+                    x: 50,
+                    y: 80,
+                    fontSize: 20,
+                    draggable: true,
+                    width: 200,
+                });
+                textBoxes.push(textNode);
+
+                layer.add(textBoxes[textBoxes.length - 1]);
+                var tr = new Konva.Transformer({
+                    node: textBoxes[textBoxes.length - 1],
+                    //enabledAnchors: ['top-left',
+                    //    'top-right',
+                    //    'bottom-left',
+                    //    'bottom-right',],
+                    //// set minimum width of text
+                    boundBoxFunc: function (oldBox, newBox) {
+                        newBox.width = Math.max(30, newBox.width);
+                        return newBox;
+                    },
+                });
+
+                textTransformers.push(tr);
+                //textNode.on('transform', function () {
+                //    // reset scale, so only with is changing by transformer
+                //    textNode.setAttrs({
+                //        width: textNode.width() * textNode.scaleX(),
+                //        scaleX: 1,
+                //        height: textNode.height() * textNode.scaleY(),
+                //        scaleY: 1,
+                //    });
+                //});
+                layer.add(textTransformers[textTransformers.length - 1]);
+                layer.draw();
+                textBoxes[textBoxes.length - 1].on('click', () => {
+                    tr.show();
+                    layer.draw();
+                });
+                textBoxes[textBoxes.length - 1].on('dblclick', () => {
+                    if ($('#deletecheckbox').prop('checked')) {
+                        textNode.remove();
+                        $('#deletecheckbox').prop('checked', false);
+                        $('#deletecheckbox').removeClass('active');
+                        return;
+                    }
+                    // hide text node and transformer:
+                    textNode.hide();
+                    tr.hide();
+                    layer.draw();
+
+                    // create textarea over canvas with absolute position
+                    // first we need to find position for textarea
+                    // how to find it?
+
+                    // at first lets find position of text node relative to the stage:
+                    var textPosition = textNode.absolutePosition();
+
+                    // then lets find position of stage container on the page:
+                    var stageBox = stage.container().getBoundingClientRect();
+
+                    // so position of textarea will be the sum of positions above:
+                    var areaPosition = {
+                        x: stageBox.left + textPosition.x,
+                        y: stageBox.top + textPosition.y,
+                    };
+
+                    // create textarea and style it
+                    var textarea = document.createElement('textarea');
+                    document.body.appendChild(textarea);
+
+                    // apply many styles to match text on canvas as close as possible
+                    // remember that text rendering on canvas and on the textarea can be different
+                    // and sometimes it is hard to make it 100% the same. But we will try...
+                    textarea.value = textNode.text();
+                    textarea.style.position = 'absolute';
+                    textarea.style.top = areaPosition.y + 'px';
+                    textarea.style.left = areaPosition.x + 'px';
+                    textarea.style.width = textNode.width() - textNode.padding() * 2 + 'px';
+                    textarea.style.height =
+                        textNode.height() - textNode.padding() * 2 + 5 + 'px';
+                    textarea.style.fontSize = textNode.fontSize() + 'px';
+                    textarea.style.border = 'none';
+                    textarea.style.padding = '0px';
+                    textarea.style.margin = '0px';
+                    textarea.style.overflow = 'hidden';
+                    textarea.style.background = 'none';
+                    textarea.style.outline = 'none';
+                    textarea.style.resize = 'none';
+                    textarea.style.lineHeight = textNode.lineHeight();
+                    textarea.style.fontFamily = textNode.fontFamily();
+                    textarea.style.transformOrigin = 'left top';
+                    textarea.style.textAlign = textNode.align();
+                    textarea.style.color = textNode.fill();
+                    rotation = textNode.rotation();
+                    var transform = '';
+                    if (rotation) {
+                        transform += 'rotateZ(' + rotation + 'deg)';
+                    }
+
+                    var px = 0;
+                    // also we need to slightly move textarea on firefox
+                    // because it jumps a bit
+                    var isFirefox =
+                        navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+                    if (isFirefox) {
+                        px += 2 + Math.round(textNode.fontSize() / 20);
+                    }
+                    transform += 'translateY(-' + px + 'px)';
+
+                    textarea.style.transform = transform;
+
+                    // reset height
+                    textarea.style.height = 'auto';
+                    // after browsers resized it we can set actual value
+                    textarea.style.height = textarea.scrollHeight + 3 + 'px';
+
+                    textarea.focus();
+
+                    function removeTextarea() {
+                        textarea.parentNode.removeChild(textarea);
+                        window.removeEventListener('click', handleOutsideClick);
+                        textNode.show();
+                        tr.show();
+                        tr.forceUpdate();
+                        layer.draw();
+                    }
+
+                    function setTextareaWidth(newWidth) {
+                        if (!newWidth) {
+                            // set width for placeholder
+                            newWidth = textNode.placeholder.length * textNode.fontSize();
+                        }
+                        // some extra fixes on different browsers
+                        var isSafari = /^((?!chrome|android).)*safari/i.test(
+                            navigator.userAgent
+                        );
+                        var isFirefox =
+                            navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+                        if (isSafari || isFirefox) {
+                            newWidth = Math.ceil(newWidth);
+                        }
+
+                        var isEdge =
+                            document.documentMode || /Edge/.test(navigator.userAgent);
+                        if (isEdge) {
+                            newWidth += 1;
+                        }
+                        textarea.style.width = newWidth + 'px';
+                    }
+
+                    textarea.addEventListener('keydown', function (e) {
+                        // hide on enter
+                        // but don't hide on shift + enter
+                        if (e.keyCode === 13 && !e.shiftKey) {
+                            textNode.text(textarea.value);
+                            removeTextarea();
+                        }
+                        // on esc do not set value back to node
+                        if (e.keyCode === 27) {
+                            removeTextarea();
+                        }
+                    });
+
+                    textarea.addEventListener('keydown', function (e) {
+                        scale = textNode.getAbsoluteScale().x;
+                        setTextareaWidth(textNode.width() * scale);
+                        textarea.style.height = 'auto';
+                        textarea.style.height =
+                            textarea.scrollHeight + textNode.fontSize() + 'px';
+                    });
+
+                    function handleOutsideClick(e) {
+                        if (e.target !== textarea) {
+                            textNode.text(textarea.value);
+                            removeTextarea();
+                        }
+                    }
+                    setTimeout(() => {
+                        window.addEventListener('click', handleOutsideClick);
+                    });
+                });
+
+
+            }
+
+            function plotter() {
+                var txtraw = document.getElementById('input').value;
+                f = board.jc.snippet(txtraw, true, 'x', true);
+                curve = board.create('functiongraph', [f,
+                    function () {
+                        var c = new JXG.Coords(JXG.COORDS_BY_SCREEN, [0, 0], board);
+                        return c.usrCoords[1];
+                    },
+                    function () {
+                        var c = new JXG.Coords(JXG.COORDS_BY_SCREEN, [board.canvasWidth, 0], board);
+                        return c.usrCoords[1];
+                    }
+                ], { name: txtraw, withLabel: true });
+                var q = board.create('glider', [2, 1, curve], { withLabel: false });
+                var t = board.create('text', [
+                    function () { return q.X() + 0.1; },
+                    function () { return q.Y() + 0.1; },
+                    function () { return ""; }
+                ],
+                    { fontSize: 15 });
+            }
+
+            function clearAll() {
+                JXG.JSXGraph.freeBoard(board);
+                board = JXG.JSXGraph.initBoard('jxgbox', { boundingbox: [-5, 8, 8, -5], axis: true });
+                f = null;
+                curve = null;
+            }
+
+            function addSlopeInfo() {
+                if (JXG.isFunction(f)) {
+                    var txtraw = document.getElementById('input').value;
+                    board.suspendUpdate();
+                    var q = board.create('glider', [2, 1, curve], { withLabel: false });
+                    var t = board.create('text', [
+                        function () { return q.X() + 0.1; },
+                        function () { return q.Y() + 0.1; },
+                        function () { return "The slope of the function f(x)=" + txtraw + "<br>at x=" + q.X().toFixed(2) + " is equal to " + (JXG.Math.Numerics.D(f))(q.X()).toFixed(2); }
+                    ],
+                        { fontSize: 15 });
+                    board.unsuspendUpdate();
+                }
+            }
+
+            function addTangent() {
+                if (JXG.isFunction(f)) {
+                    board.suspendUpdate();
+                    var p = board.create('glider', [1, 0, curve], { name: '' });
+                    board.create('tangent', [p], { name: '' });
+                    board.unsuspendUpdate();
+                }
+            }
+
+            function addDerivative() {
+                if (JXG.isFunction(f)) {
+                    board.create('functiongraph', [JXG.Math.Numerics.D(f),
+                    function () {
+                        var c = new JXG.Coords(JXG.COORDS_BY_SCREEN, [0, 0], board);
+                        return c.usrCoords[1];
+                    },
+                    function () {
+                        var c = new JXG.Coords(JXG.COORDS_BY_SCREEN, [board.canvasWidth, 0], board);
+                        return c.usrCoords[1];
+                    }], { dash: 2 });
+                }
+            }
+            </script>
+            <script type="text/javascript">
+            var canvas, ctx, flag = false,
+                prevX = 0,
+                currX = 0,
+                prevY = 0,
+                currY = 0,
+                dot_flag = false;
+
+            var x = "black",
+                y = 2;
+
+
+            var stage = new Konva.Stage({
+                container: 'container',   // id of container <div>
+                width: 1000,
+                height: 1000,
+                x: 20,
+                y: 10
+            });
+            stage.on('click', function (e) {
+                for (i = 0; i < textTransformers.length; i++) {
+                    textTransformers[i].hide();
+                }
+                for (i = 0; i < latexTransformers.length; i++) {
+                    latexTransformers[i].hide();
+                }
+                for (i = 0; i < arrowTransformers.length; i++) {
+                    arrowTransformers[i].hide();
+                }
+                layer.draw();
+            })
+            var layer = new Konva.Layer();
+            stage.add(layer);
+
+            var canvas = document.createElement('canvas');
+            canvas.width = stage.width();
+            canvas.height = stage.height();
+
+            // created canvas we can add to layer as "Konva.Image" element
+            var image = new Konva.Image({
+                image: canvas,
+                x: 0,
+                y: 0
+            });
+            layer.add(image);
+            stage.draw();
+
+            // Good. Now we need to get access to context element
+            var context = canvas.getContext('2d');
+            context.strokeStyle = scolor;
+            context.lineJoin = 'round';
+            context.lineWidth = 3;
+
+            var isPaint = false;
+            var lastPointerPosition;
+            var mode = 'brush';
+
+            // now we need to bind some events
+            // we need to start drawing on mousedown
+            // and stop drawing on mouseup
+            image.on('mousedown touchstart', function () {
+                isPaint = true;
+                lastPointerPosition = stage.getPointerPosition();
+            });
+
+            // will it be better to listen move/end events on the window?
+
+            stage.on('mouseup touchend', function () {
+                isPaint = false;
+            });
+
+            // and core function - drawing
+            stage.on('mousemove touchmove', function () {
+                if (!isPaint) {
+                    return;
+                }
+
+                if (mode === 'brush') {
+                    context.globalCompositeOperation = 'source-over';
+                }
+                if (mode === 'eraser') {
+                    context.globalCompositeOperation = 'destination-out';
+                }
+                context.beginPath();
+
+                var localPos = {
+                    x: lastPointerPosition.x - image.x(),
+                    y: lastPointerPosition.y - image.y()
+                };
+                context.moveTo(localPos.x, localPos.y);
+                var pos = stage.getPointerPosition();
+                localPos = {
+                    x: pos.x - image.x(),
+                    y: pos.y - image.y()
+                };
+                context.lineTo(localPos.x, localPos.y);
+                context.closePath();
+                context.stroke();
+
+                lastPointerPosition = pos;
+                layer.batchDraw();
+            });
+
+            var select = document.getElementById('tool');
+            select.addEventListener('change', function () {
+                mode = select.value;
+            });
+
+            // draw the image
+            layer.draw();
+
+            function convert() {
+                //
+                //  Get the TeX input
+                //
+                var input = document.getElementById("inputtex").value.trim();
+                //
+                //  Disable the display and render buttons until MathJax is done
+                //
+                var display = document.getElementById("display");
+                var button = document.getElementById("render");
+                button.disabled = display.disabled = true;
+                //
+                //  Clear the old output
+                //
+                output = document.getElementById('output');
+                output.innerHTML = '';
+                //
+                //  Reset the tex labels (and automatic equation numbers, though there aren't any here).
+                //  Get the conversion options (metrics and display settings)
+                //  Convert the input to CommonHTML output and use a promise to wait for it to be ready
+                //    (in case an extension needs to be loaded dynamically).
+                //
+                MathJax.texReset();
+                var options = MathJax.getMetricsFor(output);
+                options.display = display.checked;
+                MathJax.tex2svgPromise(input, options).then(function (node) {
+                    //
+                    //  The promise returns the typeset node, which we add to the output
+                    //  Then update the document to include the adjusted CSS for the
+                    //    content of the new equation.
+                    //
+                    output.appendChild(node);
+                    MathJax.startup.document.clear();
+                    MathJax.startup.document.updateDocument();
+                }).catch(function (err) {
+                    //
+                    //  If there was an error, put the message into the output instead
+                    //
+                    output.appendChild(document.createElement('pre')).appendChild(document.createTextNode(err.message));
+                }).then(function () {
+                    //
+                    //  Error or not, re-enable the display and render buttons
+                    //
+                    button.disabled = display.disabled = false;
+                    var datastr = document.getElementById("output").childNodes[0].getElementsByTagName('svg')[0].outerHTML;
+                    var canvas = document.createElement('canvas');
+                    canvg(canvas, datastr, {
+                        renderCallback: function () {
+                            var image = new Konva.Image({
+                                image: canvas,
+                                x: 200,
+                                width: canvas.width,
+                                height: canvas.height,
+                                draggable: true,
+                            });
+                            latexBoxes.push(image);
+                            layer.add(image);
+                            var tr = new Konva.Transformer({
+                                node: image,
+                                //enabledAnchors: ['top-left',
+                                //    'top-right',
+                                //    'bottom-left',
+                                //    'bottom-right',],
+                                //// set minimum width of text
+                                boundBoxFunc: function (oldBox, newBox) {
+                                    newBox.width = Math.max(30, newBox.width);
+                                    return newBox;
+                                },
+                            });
+                            latexTransformers.push(tr);
+                            layer.add(tr);
+                            layer.batchDraw();
+                            image.on('dblclick', function () {
+                                if ($('#deletecheckbox').prop('checked')) {
+                                    image.remove();
+                                    $('#deletecheckbox').prop('checked', false);
+                                    $('#deletecheckbox').removeClass('active');
+                                    return;
+                                }
+                                tr.show();
+                                tr.forceUpdate();
+                                layer.draw();
+                            });
+                        },
+                    })
+
+                    layer.draw();
+                });
+            }
+            function stageclear() {
+                layer.removeChildren();
+                context.clearRect(0, 0, canvas.width, canvas.height);
+                layer.add(image);
+                arrows = Array();
+                arrowTransformers = Array();
+                latexBoxes = Array();
+                latexTransformers = Array();
+                textBoxes = Array();
+                textTransformers = Array();
+                layer.draw();
+            }
+
+            function penclear() {
+                context.clearRect(0, 0, canvas.width, canvas.height);
+                layer.draw();
+            }
+
+            $("#file_input").change(function (e) {
+
+                var URL = window.webkitURL || window.URL;
+                var url = URL.createObjectURL(e.target.files[0]);
+                var img = new Image();
+                img.src = url;
+
+
+                img.onload = function () {
+
+                    var img_width = img.width;
+                    var img_height = img.height;
+
+                    // calculate dimensions to get max 300px
+                    //var max = 300;
+                    //var ratio = (img_width > img_height ? (img_width / max) : (img_height / max))
+
+                    // now load the Konva image
+                    var theImg = new Konva.Image({
+                        image: img,
+                        x: 50,
+                        y: 30,
+                        //width: img_width / ratio,
+                        //height: img_height / ratio,
+                        width: img_width,
+                        height: img_height,
+                        draggable: true,
+                    });
+                    arrows.push(theImg);
+                    layer.add(theImg);
+                    var tr = new Konva.Transformer({
+                        node: theImg,
+                    });
+                    arrowTransformers.push(tr);
+                    layer.add(tr);
+                    layer.batchDraw();
+                    theImg.on('dblclick', function () {
+                        if ($('#deletecheckbox').prop('checked')) {
+                            theImg.remove();
+                            $('#deletecheckbox').prop('checked', false);
+                            $('#deletecheckbox').removeClass('active');
+                            return;
+                        }
+                        tr.show();
+                        tr.forceUpdate();
+                        layer.draw();
+                    });
+
+                    layer.draw();
+                }
+
+
+            });
+            </script>
+        </div>
+    </div>
+
+
+</body>
+</html>
