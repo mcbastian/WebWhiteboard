@@ -1,8 +1,10 @@
 # Simple HTML Whiteboard with TeX
 During the Codiv-19 pandemic, I needed a simple whiteboard tool to pre-record my math lessons. I played around with a few ones, but none of them had the feature set I wanted. So I googled around and found:
+
 - JSXGraph
 - MathJax (3) (plus canvg for SVG rendering)
 - Konva
+
 for HTML/JavaScript which provide everything I need. I just needed to plug it together with a bit of BOOTSTRAP beauty and jQuery... The aim was to have one single HTML-File to put "somewhere on a webserver" and start whiteboarding. As little as possible installation.
 This project aims to bring this simple whiteboard with the following 
 ## Features
@@ -33,7 +35,9 @@ Just download/clone the HTML files and put it on a webserver in some directory. 
 
 ## License
 The used libraries are using the Apache, LGPL and MIT license, so I decided to go with the Apache 2.0 license:
+
 (c) 2020 by Sebastian Buntin
+
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
